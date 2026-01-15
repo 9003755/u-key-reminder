@@ -38,6 +38,7 @@ serve(async (req) => {
       if (!asset.user?.email) continue
       const profile = profiles.find(p => p.id === asset.user_id)
       const notifyDays = profile?.notify_days || [30, 7, 1]
+      const wechatToken = profile?.wechat_webhook // PushPlus Token
       
       const expiryDate = new Date(asset.expiry_date)
       expiryDate.setHours(0, 0, 0, 0)
@@ -52,30 +53,38 @@ serve(async (req) => {
         
         let subject = ''
         let statusHtml = ''
+        let shortStatus = ''
 
         if (diffDays > 0) {
             subject = `[提醒] ${asset.name} 还有 ${diffDays} 天到期`
             statusHtml = `剩余天数：<span style="font-weight: bold; font-size: 1.2em; color: #D97706;">${diffDays} 天</span>`
+            shortStatus = `${diffDays} 天`
         } else if (diffDays === 0) {
             subject = `[紧急] ${asset.name} 今天到期！`
             statusHtml = `状态：<span style="font-weight: bold; font-size: 1.2em; color: #DC2626;">今天到期</span>`
+            shortStatus = `今天到期`
         } else {
             const overdueDays = Math.abs(diffDays)
             subject = `[严重过期] ${asset.name} 已过期 ${overdueDays} 天！`
             statusHtml = `状态：<span style="font-weight: bold; font-size: 1.2em; color: #DC2626;">已过期 ${overdueDays} 天</span>`
+            shortStatus = `过期 ${overdueDays} 天`
         }
 
         notifications.push({
           email: asset.user.email,
+          wechatToken: wechatToken,
           assetName: asset.name,
           subject: subject,
           statusHtml: statusHtml,
+          shortStatus: shortStatus,
           expiryDate: asset.expiry_date
         })
       }
     }
 
     const results = []
+    
+    // 1. Send Email via Resend
     if (RESEND_API_KEY) {
       for (const notification of notifications) {
         const res = await fetch('https://api.resend.com/emails', {
@@ -104,11 +113,35 @@ serve(async (req) => {
             `
           })
         })
-        results.push(await res.json())
+        results.push({ type: 'email', ...await res.json() })
       }
     }
 
-    return new Response(JSON.stringify({ sent: results.length }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
+    // 2. Send WeChat via PushPlus
+    for (const notification of notifications) {
+      if (notification.wechatToken) {
+        const res = await fetch('http://www.pushplus.plus/send', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                token: notification.wechatToken,
+                title: notification.subject,
+                content: `
+                    您的资产 <b>${notification.assetName}</b> 需要关注。<br/>
+                    状态：<b style="color:red">${notification.shortStatus}</b><br/>
+                    到期日期：${notification.expiryDate}<br/><br/>
+                    请及时处理。
+                `,
+                template: 'html'
+            })
+        })
+        results.push({ type: 'wechat', ...await res.json() })
+      }
+    }
+
+    return new Response(JSON.stringify({ sent: results.length, details: results }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
   } catch (error) {
     return new Response(JSON.stringify({ error: error.message }), { status: 400, headers: corsHeaders })
   }

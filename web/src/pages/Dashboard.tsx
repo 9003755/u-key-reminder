@@ -1,8 +1,9 @@
 import { useEffect, useState } from 'react';
 import { supabase } from '../lib/supabase';
 import { differenceInDays, parseISO } from 'date-fns';
-import { Plus, AlertTriangle, CheckCircle, Clock } from 'lucide-react';
+import { Plus, AlertTriangle, CheckCircle, Clock, Settings } from 'lucide-react';
 import AssetModal from '../components/AssetModal';
+import SettingsModal from '../components/SettingsModal';
 
 interface Asset {
   id?: string;
@@ -18,6 +19,7 @@ export default function Dashboard() {
   const [assets, setAssets] = useState<Asset[]>([]);
   const [loading, setLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [editingAsset, setEditingAsset] = useState<Asset | null>(null);
 
   useEffect(() => {
@@ -110,7 +112,15 @@ export default function Dashboard() {
             管理您的所有 U盾、CA 证书及其他到期资产。
           </p>
         </div>
-        <div className="mt-4 sm:ml-16 sm:mt-0 sm:flex-none">
+        <div className="mt-4 sm:ml-16 sm:mt-0 sm:flex-none flex gap-3">
+          <button
+            type="button"
+            onClick={() => setIsSettingsOpen(true)}
+            className="block rounded-md bg-white px-3 py-2 text-center text-sm font-semibold text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-gray-50"
+          >
+            <Settings className="inline-block h-4 w-4 mr-1" />
+            通知设置
+          </button>
           <button
             type="button"
             onClick={handleAdd}
@@ -195,6 +205,10 @@ export default function Dashboard() {
         onClose={() => setIsModalOpen(false)}
         onSave={handleSave}
         initialData={editingAsset}
+      />
+      <SettingsModal
+        isOpen={isSettingsOpen}
+        onClose={() => setIsSettingsOpen(false)}
       />
     </div>
   );
