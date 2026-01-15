@@ -3,6 +3,7 @@ import { Dialog, Transition } from '@headlessui/react';
 import { X, MessageSquare } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 
+// Force update trigger
 interface SettingsModalProps {
   isOpen: boolean;
   onClose: () => void;
