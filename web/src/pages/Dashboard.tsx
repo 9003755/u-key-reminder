@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { supabase } from '../lib/supabase';
 import { differenceInDays, parseISO } from 'date-fns';
-import { Plus, AlertTriangle, CheckCircle, Clock, Settings } from 'lucide-react';
+import { Plus, AlertTriangle, CheckCircle, Clock, Settings, ArrowUpDown } from 'lucide-react';
 import AssetModal from '../components/AssetModal';
 import SettingsModal from '../components/SettingsModal';
 
@@ -15,16 +15,21 @@ interface Asset {
   notes: string;
 }
 
+type SortField = 'expiry_date' | 'name' | 'type';
+type SortOrder = 'asc' | 'desc';
+
 export default function Dashboard() {
   const [assets, setAssets] = useState<Asset[]>([]);
   const [loading, setLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [editingAsset, setEditingAsset] = useState<Asset | null>(null);
+  const [sortField, setSortField] = useState<SortField>('expiry_date');
+  const [sortOrder, setSortOrder] = useState<SortOrder>('asc');
 
   useEffect(() => {
     fetchAssets();
-  }, []);
+  }, [sortField, sortOrder]);
 
   const fetchAssets = async () => {
     setLoading(true);
@@ -32,7 +37,7 @@ export default function Dashboard() {
       const { data, error } = await supabase
         .from('assets')
         .select('*')
-        .order('expiry_date', { ascending: true });
+        .order(sortField, { ascending: sortOrder === 'asc' });
       
       if (error) throw error;
       setAssets(data || []);
@@ -40,14 +45,32 @@ export default function Dashboard() {
       console.error('Error fetching assets:', error);
       // Mock data for demo if connection fails (or env vars missing)
       if (import.meta.env.VITE_SUPABASE_URL.includes('placeholder')) {
-         setAssets([
+         const mockData: Asset[] = [
            { id: '1', name: '工商银行U盾', type: 'U-Key', expiry_date: '2026-02-01', renewal_method: '柜台办理', websites: ['www.xx.com'], notes: '公司公户' },
            { id: '2', name: '阿里云域名', type: 'Domain', expiry_date: '2026-01-20', renewal_method: '在线续费', websites: ['www.yy.com'], notes: '自动续费失败' },
            { id: '3', name: '招投标CA', type: 'CA', expiry_date: '2026-06-15', renewal_method: '网站支付', websites: ['www.uu.com', 'www.ii.com'], notes: '' },
-         ]);
+         ];
+         // Manual sort for mock data
+         mockData.sort((a, b) => {
+           const valA = a[sortField] || '';
+           const valB = b[sortField] || '';
+           if (valA < valB) return sortOrder === 'asc' ? -1 : 1;
+           if (valA > valB) return sortOrder === 'asc' ? 1 : -1;
+           return 0;
+         });
+         setAssets(mockData);
       }
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleSort = (field: SortField) => {
+    if (sortField === field) {
+      setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc');
+    } else {
+      setSortField(field);
+      setSortOrder('asc');
     }
   };
 
@@ -138,9 +161,30 @@ export default function Dashboard() {
               <table className="min-w-full divide-y divide-gray-300">
                 <thead className="bg-gray-50">
                   <tr>
-                    <th scope="col" className="py-3.5 pl-4 pr-3 text-left text-sm font-semibold text-gray-900 sm:pl-6">名称</th>
-                    <th scope="col" className="px-3 py-3.5 text-left text-sm font-semibold text-gray-900">类型</th>
-                    <th scope="col" className="px-3 py-3.5 text-left text-sm font-semibold text-gray-900">到期日</th>
+                    <th scope="col" className="py-3.5 pl-4 pr-3 text-left text-sm font-semibold text-gray-900 sm:pl-6 cursor-pointer hover:bg-gray-100" onClick={() => handleSort('name')}>
+                      <div className="group inline-flex">
+                        名称
+                        <span className={`ml-2 flex-none rounded text-gray-400 group-hover:visible group-focus:visible ${sortField === 'name' ? 'visible text-gray-900' : 'invisible'}`}>
+                          <ArrowUpDown className="h-4 w-4" aria-hidden="true" />
+                        </span>
+                      </div>
+                    </th>
+                    <th scope="col" className="px-3 py-3.5 text-left text-sm font-semibold text-gray-900 cursor-pointer hover:bg-gray-100" onClick={() => handleSort('type')}>
+                      <div className="group inline-flex">
+                        类型
+                        <span className={`ml-2 flex-none rounded text-gray-400 group-hover:visible group-focus:visible ${sortField === 'type' ? 'visible text-gray-900' : 'invisible'}`}>
+                          <ArrowUpDown className="h-4 w-4" aria-hidden="true" />
+                        </span>
+                      </div>
+                    </th>
+                    <th scope="col" className="px-3 py-3.5 text-left text-sm font-semibold text-gray-900 cursor-pointer hover:bg-gray-100" onClick={() => handleSort('expiry_date')}>
+                      <div className="group inline-flex">
+                        到期日
+                        <span className={`ml-2 flex-none rounded text-gray-400 group-hover:visible group-focus:visible ${sortField === 'expiry_date' ? 'visible text-gray-900' : 'invisible'}`}>
+                          <ArrowUpDown className="h-4 w-4" aria-hidden="true" />
+                        </span>
+                      </div>
+                    </th>
                     <th scope="col" className="px-3 py-3.5 text-left text-sm font-semibold text-gray-900">剩余天数</th>
                     <th scope="col" className="px-3 py-3.5 text-left text-sm font-semibold text-gray-900">续费方式</th>
                     <th scope="col" className="px-3 py-3.5 text-left text-sm font-semibold text-gray-900">使用的网站</th>
