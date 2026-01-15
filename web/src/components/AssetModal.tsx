@@ -11,6 +11,7 @@ interface Asset {
   renewal_method: string;
   websites: string[];
   notes: string;
+  notification_enabled?: boolean;
 }
 
 interface AssetModalProps {
@@ -29,7 +30,8 @@ export default function AssetModal({ isOpen, onClose, onSave, initialData }: Ass
     expiry_date: '',
     renewal_method: '',
     websites: [''],
-    notes: ''
+    notes: '',
+    notification_enabled: true
   });
   const [loading, setLoading] = useState(false);
 
@@ -37,7 +39,8 @@ export default function AssetModal({ isOpen, onClose, onSave, initialData }: Ass
     if (initialData) {
       setFormData({
         ...initialData,
-        websites: initialData.websites && initialData.websites.length > 0 ? initialData.websites : ['']
+        websites: initialData.websites && initialData.websites.length > 0 ? initialData.websites : [''],
+        notification_enabled: initialData.notification_enabled ?? true
       });
     } else {
       setFormData({
@@ -46,7 +49,8 @@ export default function AssetModal({ isOpen, onClose, onSave, initialData }: Ass
         expiry_date: '',
         renewal_method: '',
         websites: [''],
-        notes: ''
+        notes: '',
+        notification_enabled: true
       });
     }
   }, [initialData, isOpen]);
@@ -108,21 +112,6 @@ export default function AssetModal({ isOpen, onClose, onSave, initialData }: Ass
       setLoading(false);
     }
   };
-
-  const [notificationEnabled, setNotificationEnabled] = useState(true);
-
-  // Initialize notification state when opening existing asset
-  useEffect(() => {
-    if (initialData) {
-      // In a real app, this would be a field in the database.
-      // For now, we assume it's enabled by default or we'd need to add a column.
-      // Let's assume we will add a 'notification_enabled' column later.
-      // For now, let's just use local state for the UI demo.
-      setNotificationEnabled(true); 
-    } else {
-      setNotificationEnabled(true);
-    }
-  }, [initialData]);
 
   return (
     <Transition.Root show={isOpen} as={Fragment}>
@@ -221,8 +210,8 @@ export default function AssetModal({ isOpen, onClose, onSave, initialData }: Ass
                               id="notification_enabled"
                               name="notification_enabled"
                               type="checkbox"
-                              checked={notificationEnabled}
-                              onChange={(e) => setNotificationEnabled(e.target.checked)}
+                              checked={formData.notification_enabled}
+                              onChange={(e) => setFormData({ ...formData, notification_enabled: e.target.checked })}
                               className="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-600"
                             />
                             <label htmlFor="notification_enabled" className="ml-2 block text-sm text-gray-900">
