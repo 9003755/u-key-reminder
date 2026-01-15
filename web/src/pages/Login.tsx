@@ -36,12 +36,23 @@ export default function Login() {
   };
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-gray-50 px-4 py-12 sm:px-6 lg:px-8">
+    <div className="flex min-h-screen items-center justify-center bg-gray-50 px-4 py-12 sm:px-6 lg:px-8 relative">
+      {/* 右上角署名 */}
+      <div className="absolute top-4 right-4 text-xs text-gray-400 font-mono">
+        by 海边的飞行器 18520403199
+      </div>
+
       <div className="w-full max-w-md space-y-8">
         <div>
           <h2 className="mt-6 text-center text-3xl font-bold tracking-tight text-gray-900">
             {isSignUp ? '注册新账户' : '登录到您的账户'}
           </h2>
+          {/* 系统简介 */}
+          <p className="mt-4 text-center text-sm text-gray-600 leading-relaxed">
+            专业的 U盾/CA 证书及重要资产到期提醒助手。
+            <br />
+            支持邮件、微信多渠道通知，确保您的关键业务永不掉线。
+          </p>
         </div>
         <form className="mt-8 space-y-6" onSubmit={handleAuth}>
           <div className="-space-y-px rounded-md shadow-sm">
