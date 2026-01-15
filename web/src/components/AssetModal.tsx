@@ -20,7 +20,7 @@ interface AssetModalProps {
   initialData?: Asset | null;
 }
 
-const ASSET_TYPES = ['U-Key', 'CA', 'Domain', 'Server', 'Other'];
+const ASSET_TYPES = ['U-Key', 'CA', 'Domain', 'Server', 'Insurance', 'Other'];
 
 export default function AssetModal({ isOpen, onClose, onSave, initialData }: AssetModalProps) {
   const [formData, setFormData] = useState<Asset>({
