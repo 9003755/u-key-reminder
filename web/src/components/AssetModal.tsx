@@ -109,6 +109,21 @@ export default function AssetModal({ isOpen, onClose, onSave, initialData }: Ass
     }
   };
 
+  const [notificationEnabled, setNotificationEnabled] = useState(true);
+
+  // Initialize notification state when opening existing asset
+  useEffect(() => {
+    if (initialData) {
+      // In a real app, this would be a field in the database.
+      // For now, we assume it's enabled by default or we'd need to add a column.
+      // Let's assume we will add a 'notification_enabled' column later.
+      // For now, let's just use local state for the UI demo.
+      setNotificationEnabled(true); 
+    } else {
+      setNotificationEnabled(true);
+    }
+  }, [initialData]);
+
   return (
     <Transition.Root show={isOpen} as={Fragment}>
       <Dialog as="div" className="relative z-10" onClose={onClose}>
@@ -197,6 +212,22 @@ export default function AssetModal({ isOpen, onClose, onSave, initialData }: Ass
                               value={formData.expiry_date}
                               onChange={(e) => setFormData({ ...formData, expiry_date: e.target.value })}
                             />
+                          </div>
+                          <p className="mt-1 text-xs text-gray-500">
+                            系统将在到期前10天开始，每日 09:30、14:30、21:00 发送提醒。
+                          </p>
+                          <div className="mt-2 flex items-center">
+                            <input
+                              id="notification_enabled"
+                              name="notification_enabled"
+                              type="checkbox"
+                              checked={notificationEnabled}
+                              onChange={(e) => setNotificationEnabled(e.target.checked)}
+                              className="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-600"
+                            />
+                            <label htmlFor="notification_enabled" className="ml-2 block text-sm text-gray-900">
+                              启用到期提醒
+                            </label>
                           </div>
                         </div>
 
