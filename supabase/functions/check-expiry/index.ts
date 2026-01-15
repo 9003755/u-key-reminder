@@ -18,6 +18,7 @@ serve(async (req) => {
   }
 
   try {
+    // 1. 获取所有资产
     const { data: assets, error: assetsError } = await supabase
       .from('assets')
       .select(`*, user:user_id (email)`)
@@ -35,10 +36,14 @@ serve(async (req) => {
     today.setHours(0, 0, 0, 0)
 
     for (const asset of assets) {
+      // ⚠️ 关键检查：如果用户关闭了提醒，直接跳过！
+      if (asset.notification_enabled === false) {
+          continue; 
+      }
+
       if (!asset.user?.email) continue
       const profile = profiles.find(p => p.id === asset.user_id)
-      const notifyDays = profile?.notify_days || [30, 7, 1]
-      const wechatToken = profile?.wechat_webhook // PushPlus Token
+      const wechatToken = profile?.wechat_webhook
       
       const expiryDate = new Date(asset.expiry_date)
       expiryDate.setHours(0, 0, 0, 0)
@@ -46,10 +51,8 @@ serve(async (req) => {
       const diffTime = expiryDate.getTime() - today.getTime()
       const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24))
 
-      // 逻辑升级：
-      // 1. 在预设的提醒日 (30, 7, 1) 发送
-      // 2. 或者：如果已经到期或过期 (diffDays <= 0)，每天都发送！
-      if (notifyDays.includes(diffDays) || diffDays <= 0) {
+      // 逻辑：剩余天数 <= 10 天，或者已经过期，都发送提醒
+      if (diffDays <= 10) {
         
         let subject = ''
         let statusHtml = ''
@@ -84,7 +87,7 @@ serve(async (req) => {
 
     const results = []
     
-    // 1. Send Email via Resend
+    // 1. Send Email
     if (RESEND_API_KEY) {
       for (const notification of notifications) {
         const res = await fetch('https://api.resend.com/emails', {
@@ -106,7 +109,6 @@ serve(async (req) => {
                   ${notification.statusHtml}
                 </div>
                 <p>到期日期：${notification.expiryDate}</p>
-                <p>请务必及时处理，并在系统中更新到期时间以停止此通知。</p>
                 <hr style="border: 0; border-top: 1px solid #eee; margin-top: 30px;">
                 <p style="font-size: 12px; color: #888;">来自 U盾/CA 提醒助手</p>
               </div>
@@ -117,23 +119,16 @@ serve(async (req) => {
       }
     }
 
-    // 2. Send WeChat via PushPlus
+    // 2. Send WeChat
     for (const notification of notifications) {
       if (notification.wechatToken) {
         const res = await fetch('http://www.pushplus.plus/send', {
             method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
+            headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
                 token: notification.wechatToken,
                 title: notification.subject,
-                content: `
-                    您的资产 <b>${notification.assetName}</b> 需要关注。<br/>
-                    状态：<b style="color:red">${notification.shortStatus}</b><br/>
-                    到期日期：${notification.expiryDate}<br/><br/>
-                    请及时处理。
-                `,
+                content: `您的资产 <b>${notification.assetName}</b> 需要关注。<br/>状态：<b style="color:red">${notification.shortStatus}</b><br/>到期日期：${notification.expiryDate}`,
                 template: 'html'
             })
         })
