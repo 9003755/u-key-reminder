@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { supabase } from '../lib/supabase';
-import { format, differenceInDays, parseISO } from 'date-fns';
+import { differenceInDays, parseISO } from 'date-fns';
 import { Plus, AlertTriangle, CheckCircle, Clock } from 'lucide-react';
 import AssetModal from '../components/AssetModal';
 
