@@ -211,11 +211,20 @@ export default function AssetModal({ isOpen, onClose, onSave, initialData }: Ass
                               name="notification_enabled"
                               type="checkbox"
                               checked={formData.notification_enabled}
-                              onChange={(e) => setFormData({ ...formData, notification_enabled: e.target.checked })}
+                              onChange={(e) => {
+                                if (!e.target.checked) {
+                                  if (window.confirm("⚠️ 确认关闭提醒吗？\n\n关闭后，该资产到期前您将无法收到任何邮件或微信提醒，可能会导致业务中断风险。\n\n是否确认关闭？")) {
+                                    setFormData({ ...formData, notification_enabled: false });
+                                  }
+                                  // If user cancels, do nothing (keep it checked)
+                                } else {
+                                  setFormData({ ...formData, notification_enabled: true });
+                                }
+                              }}
                               className="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-600"
                             />
                             <label htmlFor="notification_enabled" className="ml-2 block text-sm text-gray-900">
-                              启用到期提醒
+                              启用到期提醒 {formData.notification_enabled === false && <span className="text-red-500 text-xs font-bold">(已关闭)</span>}
                             </label>
                           </div>
                         </div>
