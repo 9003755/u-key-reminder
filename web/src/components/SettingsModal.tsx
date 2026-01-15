@@ -11,7 +11,6 @@ interface SettingsModalProps {
 
 export default function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
   const [pushPlusToken, setPushPlusToken] = useState('');
-  const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
@@ -21,7 +20,6 @@ export default function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
   }, [isOpen]);
 
   const fetchProfile = async () => {
-    setLoading(true);
     try {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
@@ -41,8 +39,6 @@ export default function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
       }
     } catch (error) {
       console.error('Error:', error);
-    } finally {
-      setLoading(false);
     }
   };
 
