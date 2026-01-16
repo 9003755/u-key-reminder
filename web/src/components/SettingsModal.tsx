@@ -54,7 +54,8 @@ export default function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
       if (!user) throw new Error('No user');
 
       // Parse notify days
-      const daysArray = notifyDays.split(',')
+      // Replace Chinese comma with English comma first
+      const daysArray = notifyDays.replace(/，/g, ',').split(',')
         .map(d => parseInt(d.trim()))
         .filter(d => !isNaN(d) && d >= 0)
         .sort((a, b) => b - a); // Sort descending
