@@ -1,6 +1,6 @@
 import { Fragment, useEffect, useState } from 'react';
 import { Dialog, Transition } from '@headlessui/react';
-import { X, Plus, Trash2, Camera, Upload } from 'lucide-react';
+import { X, Plus, Trash2, Camera } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 
 interface Asset {
