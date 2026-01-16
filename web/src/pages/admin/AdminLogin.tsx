@@ -18,13 +18,9 @@ export default function AdminLogin() {
   const checkSession = async () => {
     const { data: { session } } = await supabase.auth.getSession();
     if (session) {
-      const { data: profile } = await supabase
-        .from('profiles')
-        .select('is_admin')
-        .eq('id', session.user.id)
-        .single();
+      const { data: isAdmin } = await supabase.rpc('is_admin');
       
-      if (profile?.is_admin) {
+      if (isAdmin) {
         navigate('/admin/dashboard');
       }
     }
@@ -44,14 +40,15 @@ export default function AdminLogin() {
       if (error) throw error;
 
       if (data.user) {
-        // Verify admin status
-        const { data: profile } = await supabase
-          .from('profiles')
-          .select('is_admin')
-          .eq('id', data.user.id)
-          .single();
+        // Verify admin status using RPC (bypasses RLS issues)
+        const { data: isAdmin, error: rpcError } = await supabase.rpc('is_admin');
 
-        if (!profile?.is_admin) {
+        if (rpcError) {
+            console.error('RPC Error:', rpcError);
+            throw new Error('Error verifying admin status');
+        }
+
+        if (!isAdmin) {
           await supabase.auth.signOut();
           throw new Error('Access Denied: Not an administrator');
         }

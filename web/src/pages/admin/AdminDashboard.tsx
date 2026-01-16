@@ -52,13 +52,9 @@ export default function AdminDashboard() {
         return;
       }
 
-      const { data: profile } = await supabase
-        .from('profiles')
-        .select('is_admin')
-        .eq('id', session.user.id)
-        .single();
+      const { data: isAdmin } = await supabase.rpc('is_admin');
 
-      if (!profile?.is_admin) {
+      if (!isAdmin) {
         navigate('/admin/login');
         return;
       }
