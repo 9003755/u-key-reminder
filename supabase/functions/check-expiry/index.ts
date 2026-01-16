@@ -17,42 +17,107 @@ serve(async (req) => {
     return new Response('ok', { headers: corsHeaders })
   }
 
+  const logs: string[] = []
+  const log = (msg: string) => {
+    console.log(msg)
+    logs.push(msg)
+  }
+
   try {
+    log('Starting check-expiry function...')
+
+    if (!RESEND_API_KEY) {
+      log('ERROR: RESEND_API_KEY is not set')
+    } else {
+      log('RESEND_API_KEY is present')
+    }
+
     // 1. 获取所有资产
+    // Removing the join with user:user_id(email) to avoid potential issues if foreign key is not detected by PostgREST
     const { data: assets, error: assetsError } = await supabase
       .from('assets')
-      .select(`*, user:user_id (email)`)
+      .select('*')
     
-    if (assetsError) throw assetsError
+    if (assetsError) {
+      log(`Error fetching assets: ${assetsError.message}`)
+      throw assetsError
+    }
+    log(`Fetched ${assets?.length || 0} assets`)
 
+    // 2. Fetch users using Admin API to ensure we get emails
+    const { data: { users }, error: usersError } = await supabase.auth.admin.listUsers()
+    if (usersError) {
+      log(`Error fetching users: ${usersError.message}`)
+      throw usersError
+    }
+    log(`Fetched ${users?.length || 0} users`)
+    
+    // Map user ID to email
+    const userMap = new Map(users.map(u => [u.id, u.email]))
+
+    // 3. Fetch profiles for WeChat webhook
     const { data: profiles, error: profilesError } = await supabase
       .from('profiles')
       .select('*')
     
-    if (profilesError) throw profilesError
+    if (profilesError) {
+      log(`Error fetching profiles: ${profilesError.message}`)
+      throw profilesError
+    }
 
     const notifications = []
     const today = new Date()
     today.setHours(0, 0, 0, 0)
 
     for (const asset of assets) {
+      const userEmail = userMap.get(asset.user_id)
+      
+      log(`Checking asset: ${asset.name} (ID: ${asset.id})`)
+      log(`  User ID: ${asset.user_id}`)
+      log(`  User Email: ${userEmail || 'NOT FOUND'}`)
+      log(`  Notification Enabled: ${asset.notification_enabled}`)
+      log(`  Expiry Date: ${asset.expiry_date}`)
+
       // ⚠️ 关键检查：如果用户关闭了提醒，直接跳过！
       if (asset.notification_enabled === false) {
-          continue; 
+        log('  Skipping: Notification disabled')
+        continue; 
       }
 
-      if (!asset.user?.email) continue
+      if (!userEmail) {
+        log('  Skipping: User email not found')
+        continue
+      }
+
       const profile = profiles.find(p => p.id === asset.user_id)
       const wechatToken = profile?.wechat_webhook
+      const notifyDaysSetting = profile?.notify_days || [30, 7, 1] // Default
       
       const expiryDate = new Date(asset.expiry_date)
       expiryDate.setHours(0, 0, 0, 0)
       
       const diffTime = expiryDate.getTime() - today.getTime()
       const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24))
+      
+      log(`  Days until expiry: ${diffDays}`)
 
-      // 逻辑：剩余天数 <= 10 天，或者已经过期，都发送提醒
-      if (diffDays <= 10) {
+      // 逻辑：
+      // 1. 如果 diffDays 在用户的 notifyDaysSetting 数组中，发送提醒
+      // 2. 如果 diffDays <= 0 (已过期)，发送提醒 (防止用户错过) - 可选，这里我们保持如果过期每天提醒
+      //    或者可以改为只在过期当天 (0) 和过期后的特定周期提醒。
+      //    目前保持：过期后每天提醒，直到用户处理（更新日期或关闭提醒）
+      
+      let shouldNotify = false
+      if (diffDays <= 0) {
+          shouldNotify = true
+      } else {
+          if (notifyDaysSetting.includes(diffDays)) {
+              shouldNotify = true
+          }
+      }
+
+      if (shouldNotify) {
+        log('  >>> Adding to notification list')
         
         let subject = ''
         let statusHtml = ''
@@ -74,7 +139,7 @@ serve(async (req) => {
         }
 
         notifications.push({
-          email: asset.user.email,
+          email: userEmail,
           wechatToken: wechatToken,
           assetName: asset.name,
           subject: subject,
@@ -82,14 +147,17 @@ serve(async (req) => {
           shortStatus: shortStatus,
           expiryDate: asset.expiry_date
         })
+      } else {
+        log(`  Not notifying today (Not in notify_days: ${notifyDaysSetting.join(', ')})`)
       }
     }
 
     const results = []
     
     // 1. Send Email
-    if (RESEND_API_KEY) {
+    if (RESEND_API_KEY && notifications.length > 0) {
       for (const notification of notifications) {
+        log(`Sending email to ${notification.email} for ${notification.assetName}...`)
         const res = await fetch('https://api.resend.com/emails', {
           method: 'POST',
           headers: {
@@ -115,13 +183,19 @@ serve(async (req) => {
             `
           })
         })
-        results.push({ type: 'email', ...await res.json() })
+        const resData = await res.json()
+        log(`Resend response: ${JSON.stringify(resData)}`)
+        results.push({ type: 'email', ...resData })
       }
+    } else {
+        if (!RESEND_API_KEY) log('Skipping email: No API Key')
+        if (notifications.length === 0) log('Skipping email: No notifications to send')
     }
 
     // 2. Send WeChat
     for (const notification of notifications) {
       if (notification.wechatToken) {
+        log(`Sending WeChat to token ${notification.wechatToken.substring(0, 5)}...`)
         const res = await fetch('http://www.pushplus.plus/send', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -132,12 +206,22 @@ serve(async (req) => {
                 template: 'html'
             })
         })
-        results.push({ type: 'wechat', ...await res.json() })
+        const resData = await res.json()
+        log(`WeChat response: ${JSON.stringify(resData)}`)
+        results.push({ type: 'wechat', ...resData })
+      } else {
+        log(`Skipping WeChat for ${notification.assetName}: No token`)
       }
     }
 
-    return new Response(JSON.stringify({ sent: results.length, details: results }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
+    return new Response(JSON.stringify({ 
+      sent: results.length, 
+      details: results,
+      logs: logs 
+    }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
+
   } catch (error) {
-    return new Response(JSON.stringify({ error: error.message }), { status: 400, headers: corsHeaders })
+    log(`FATAL ERROR: ${error.message}`)
+    return new Response(JSON.stringify({ error: error.message, logs: logs }), { status: 400, headers: corsHeaders })
   }
 })

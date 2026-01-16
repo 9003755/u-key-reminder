@@ -11,6 +11,7 @@ interface SettingsModalProps {
 
 export default function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
   const [pushPlusToken, setPushPlusToken] = useState('');
+  const [notifyDays, setNotifyDays] = useState<string>('30, 7, 1');
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
@@ -26,7 +27,7 @@ export default function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
 
       const { data, error } = await supabase
         .from('profiles')
-        .select('wechat_webhook')
+        .select('wechat_webhook, notify_days')
         .eq('id', user.id)
         .single();
 
@@ -36,6 +37,9 @@ export default function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
       
       if (data) {
         setPushPlusToken(data.wechat_webhook || '');
+        if (data.notify_days && Array.isArray(data.notify_days)) {
+            setNotifyDays(data.notify_days.join(', '));
+        }
       }
     } catch (error) {
       console.error('Error:', error);
@@ -49,11 +53,18 @@ export default function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error('No user');
 
+      // Parse notify days
+      const daysArray = notifyDays.split(',')
+        .map(d => parseInt(d.trim()))
+        .filter(d => !isNaN(d) && d >= 0)
+        .sort((a, b) => b - a); // Sort descending
+
       const { error } = await supabase
         .from('profiles')
         .upsert({ 
           id: user.id,
-          wechat_webhook: pushPlusToken
+          wechat_webhook: pushPlusToken,
+          notify_days: daysArray
         });
 
       if (error) throw error;
@@ -134,6 +145,26 @@ export default function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
                           <p className="mt-1 text-xs text-gray-500">
                             1. 访问 <a href="https://www.pushplus.plus/" target="_blank" rel="noreferrer" className="text-indigo-600 hover:underline">pushplus.plus</a> 关注公众号<br/>
                             2. 复制您的 "Token" 填入上方
+                          </p>
+                        </div>
+
+                        <div>
+                          <label htmlFor="notify_days" className="block text-sm font-medium leading-6 text-gray-900">
+                            提醒提前量 (天)
+                          </label>
+                          <div className="mt-1">
+                            <input
+                              type="text"
+                              name="notify_days"
+                              id="notify_days"
+                              className="block w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6 px-3"
+                              placeholder="例如：30, 7, 1"
+                              value={notifyDays}
+                              onChange={(e) => setNotifyDays(e.target.value)}
+                            />
+                          </div>
+                          <p className="mt-1 text-xs text-gray-500">
+                            请输入提前提醒的天数，用逗号分隔。<br/>例如 "30, 7, 1" 表示在到期前30天、7天和1天发送提醒。
                           </p>
                         </div>
 
