@@ -154,15 +154,36 @@ serve(async (req) => {
 
     const results = []
     
-    // 1. Send Email
+    // 1. Send Email (Summary)
     if (RESEND_API_KEY && notifications.length > 0) {
-      for (const notification of notifications) {
-        log(`Sending email to ${notification.email} for ${notification.assetName}...`)
+      // Group by email
+      const notificationsByEmail = new Map<string, typeof notifications>();
+      for (const n of notifications) {
+        if (!notificationsByEmail.has(n.email)) {
+          notificationsByEmail.set(n.email, []);
+        }
+        notificationsByEmail.get(n.email)!.push(n);
+      }
+
+      for (const [email, userNotifications] of notificationsByEmail) {
+        log(`Sending summary email to ${email} for ${userNotifications.length} assets...`)
         
         // Add a 1-second delay before sending to avoid rate limits
         if (results.length > 0) {
              await new Promise(resolve => setTimeout(resolve, 1000));
         }
+
+        const assetsListHtml = userNotifications.map(n => `
+          <div style="margin-bottom: 15px; padding-bottom: 15px; border-bottom: 1px solid #eee;">
+            <p style="margin: 0; font-size: 16px;"><strong>${n.assetName}</strong></p>
+            <div style="margin-top: 5px;">${n.statusHtml}</div>
+            <p style="margin: 5px 0 0 0; color: #666; font-size: 14px;">到期日期：${n.expiryDate}</p>
+          </div>
+        `).join('');
+
+        const subject = userNotifications.length === 1 
+          ? userNotifications[0].subject 
+          : `[提醒] 您有 ${userNotifications.length} 个资产需要关注`;
 
         const res = await fetch('https://api.resend.com/emails', {
           method: 'POST',
@@ -172,17 +193,16 @@ serve(async (req) => {
           },
           body: JSON.stringify({
             from: 'U盾提醒助手 <onboarding@resend.dev>',
-            to: notification.email,
-            subject: notification.subject,
+            to: email,
+            subject: subject,
             html: `
               <div style="font-family: sans-serif; padding: 20px; color: #333;">
                 <h1 style="color: #4F46E5;">🔔 资产状态提醒</h1>
                 <p>您好，</p>
-                <p>您的资产 <strong>${notification.assetName}</strong> 需要关注。</p>
-                <div style="background: #FEF2F2; color: #991B1B; padding: 15px; border-radius: 8px; margin: 20px 0; display: inline-block;">
-                  ${notification.statusHtml}
+                <p>您有 <strong>${userNotifications.length}</strong> 个资产需要关注：</p>
+                <div style="background: #FEF2F2; color: #991B1B; padding: 20px; border-radius: 8px; margin: 20px 0;">
+                  ${assetsListHtml}
                 </div>
-                <p>到期日期：${notification.expiryDate}</p>
                 <hr style="border: 0; border-top: 1px solid #eee; margin-top: 30px;">
                 <p style="font-size: 12px; color: #888;">来自 U盾/CA 提醒助手</p>
               </div>
