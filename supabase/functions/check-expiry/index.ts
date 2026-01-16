@@ -159,8 +159,10 @@ serve(async (req) => {
       for (const notification of notifications) {
         log(`Sending email to ${notification.email} for ${notification.assetName}...`)
         
-        // Add a 2-second delay to avoid rate limiting
-        await new Promise(resolve => setTimeout(resolve, 2000));
+        // Add a 1-second delay before sending to avoid rate limits
+        if (results.length > 0) {
+             await new Promise(resolve => setTimeout(resolve, 1000));
+        }
 
         const res = await fetch('https://api.resend.com/emails', {
           method: 'POST',
