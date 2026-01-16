@@ -164,7 +164,9 @@ export default function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
                             />
                           </div>
                           <p className="mt-1 text-xs text-gray-500">
-                            请输入提前提醒的天数，用逗号分隔。<br/>例如 "30, 7, 1" 表示在到期前30天、7天和1天发送提醒。
+                            请输入您希望收到提醒的剩余天数，用逗号分隔。<br/>
+                            例如 "7, 3, 1" 表示在到期前第7天、第3天和第1天分别发送提醒。<br/>
+                            (注：已过期的资产默认会每天提醒，直至处理)
                           </p>
                         </div>
 
