@@ -256,9 +256,6 @@ export default function AssetModal({ isOpen, onClose, onSave, initialData }: Ass
                               onChange={(e) => setFormData({ ...formData, expiry_date: e.target.value })}
                             />
                           </div>
-                          <p className="mt-1 text-xs text-gray-500">
-                            系统将在到期前10天开始，每日 09:30、14:30、21:00 发送提醒。
-                          </p>
                           <div className="mt-2 flex items-center">
                             <input
                               id="notification_enabled"
