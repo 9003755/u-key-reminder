@@ -28,12 +28,12 @@
     - 设置提醒提前量。
 
 ### 4. 自动化通知逻辑 (Edge Function)
-- [ ] **Task-4.1**: 实现 `check-expiry` 的核心逻辑。
+- [x] **Task-4.1**: 实现 `check-expiry` 的核心逻辑。
     - 查询数据库中满足条件的记录。
     - 集成 Resend 发送邮件。
     - 集成 PushPlus 发送微信消息。
-- [ ] **Task-4.2**: 编写调用 Edge Function 的 SQL 触发器或 Cron 调度指令。
+- [x] **Task-4.2**: 编写调用 Edge Function 的 SQL 触发器或 Cron 调度指令。
 
 ### 5. 验收与部署 (Deploy)
-- [ ] **Task-5.1**: 验证全流程（添加资产 -> 修改日期 -> 触发模拟通知）。
-- [ ] **Task-5.2**: 提供 Vercel 部署指南。
+- [x] **Task-5.1**: 验证全流程（添加资产 -> 修改日期 -> 触发模拟通知）。
+- [x] **Task-5.2**: 提供 Vercel/Netlify 部署指南。
