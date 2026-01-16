@@ -27,6 +27,13 @@ interface UserProfile {
   notify_days: number[];
 }
 
+interface User {
+  id: string;
+  email: string;
+  created_at: string;
+  last_sign_in_at: string | null;
+}
+
 export default function AdminDashboard() {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
@@ -37,6 +44,7 @@ export default function AdminDashboard() {
   const [todayWechats, setTodayWechats] = useState(0);
   
   // Lists
+  const [users, setUsers] = useState<User[]>([]);
   const [notificationLogs, setNotificationLogs] = useState<NotificationLog[]>([]);
   const [loginLogs, setLoginLogs] = useState<LoginLog[]>([]);
 
@@ -69,11 +77,15 @@ export default function AdminDashboard() {
   const fetchData = async () => {
     setLoading(true);
     try {
-      // 1. Total Users
-      const { count: userCount } = await supabase
-        .from('profiles')
-        .select('*', { count: 'exact', head: true });
-      setTotalUsers(userCount || 0);
+      // 1. Fetch Users (using RPC to get emails)
+      const { data: usersData, error: usersError } = await supabase.rpc('get_all_users');
+      
+      if (usersError) {
+        console.error('Error fetching users:', usersError);
+      } else {
+        setUsers(usersData || []);
+        setTotalUsers(usersData?.length || 0);
+      }
 
       // 2. Notification Logs
       const { data: logs } = await supabase
@@ -207,6 +219,54 @@ export default function AdminDashboard() {
           </div>
 
           {/* Logs Section */}
+          <div className="grid grid-cols-1 gap-8 mb-8">
+             {/* Users List */}
+             <div className="bg-white shadow-md rounded-lg overflow-hidden border border-gray-200">
+              <div className="px-6 py-5 border-b border-gray-200 bg-gray-50 flex justify-between items-center">
+                <h3 className="text-lg font-medium leading-6 text-gray-900 flex items-center gap-2">
+                  <Users className="h-5 w-5 text-gray-500" />
+                  注册用户列表
+                </h3>
+                <span className="text-xs text-gray-500 bg-white px-2 py-1 rounded border">共 {users.length} 人</span>
+              </div>
+              <div className="overflow-x-auto max-h-96">
+                <table className="min-w-full divide-y divide-gray-200">
+                  <thead className="bg-gray-50 sticky top-0 z-10">
+                    <tr>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">邮箱</th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">注册时间</th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">最后登录</th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">ID</th>
+                    </tr>
+                  </thead>
+                  <tbody className="bg-white divide-y divide-gray-200">
+                    {users.map((user) => (
+                      <tr key={user.id} className="hover:bg-gray-50">
+                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                          {user.email}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                          {format(new Date(user.created_at), 'yyyy-MM-dd HH:mm', { locale: zhCN })}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                          {user.last_sign_in_at 
+                            ? format(new Date(user.last_sign_in_at), 'yyyy-MM-dd HH:mm', { locale: zhCN })
+                            : '从未登录'}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-xs text-gray-400 font-mono">
+                          {user.id}
+                        </td>
+                      </tr>
+                    ))}
+                    {users.length === 0 && (
+                      <tr><td colSpan={4} className="text-center py-10 text-gray-500">暂无用户</td></tr>
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
             
             {/* Notification Logs */}
@@ -285,7 +345,7 @@ export default function AdminDashboard() {
                           {format(new Date(log.login_at), 'MM-dd HH:mm:ss', { locale: zhCN })}
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 font-mono">
-                          {log.user_id}
+                          {users.find(u => u.id === log.user_id)?.email || log.user_id}
                         </td>
                       </tr>
                     ))}
