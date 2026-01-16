@@ -1,6 +1,6 @@
 import { Fragment, useEffect, useState } from 'react';
 import { Dialog, Transition } from '@headlessui/react';
-import { X, Plus, Trash2 } from 'lucide-react';
+import { X, Plus, Trash2, Camera, Upload } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 
 interface Asset {
@@ -12,6 +12,7 @@ interface Asset {
   websites: string[];
   notes: string;
   notification_enabled?: boolean;
+  images?: string[];
 }
 
 interface AssetModalProps {
@@ -31,16 +32,19 @@ export default function AssetModal({ isOpen, onClose, onSave, initialData }: Ass
     renewal_method: '',
     websites: [''],
     notes: '',
-    notification_enabled: true
+    notification_enabled: true,
+    images: []
   });
   const [loading, setLoading] = useState(false);
+  const [uploading, setUploading] = useState(false);
 
   useEffect(() => {
     if (initialData) {
       setFormData({
         ...initialData,
         websites: initialData.websites && initialData.websites.length > 0 ? initialData.websites : [''],
-        notification_enabled: initialData.notification_enabled ?? true
+        notification_enabled: initialData.notification_enabled ?? true,
+        images: initialData.images || []
       });
     } else {
       setFormData({
@@ -50,7 +54,8 @@ export default function AssetModal({ isOpen, onClose, onSave, initialData }: Ass
         renewal_method: '',
         websites: [''],
         notes: '',
-        notification_enabled: true
+        notification_enabled: true,
+        images: []
       });
     }
   }, [initialData, isOpen]);
@@ -68,6 +73,53 @@ export default function AssetModal({ isOpen, onClose, onSave, initialData }: Ass
   const removeWebsiteField = (index: number) => {
     const newWebsites = formData.websites.filter((_, i) => i !== index);
     setFormData({ ...formData, websites: newWebsites.length ? newWebsites : [''] });
+  };
+
+  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (!e.target.files || e.target.files.length === 0) {
+      return;
+    }
+
+    if ((formData.images?.length || 0) >= 2) {
+      alert('每个设备最多只能上传两张照片');
+      return;
+    }
+
+    const file = e.target.files[0];
+    const fileExt = file.name.split('.').pop();
+    const fileName = `${Math.random()}.${fileExt}`;
+    const filePath = `${fileName}`;
+
+    setUploading(true);
+
+    try {
+      const { error: uploadError } = await supabase.storage
+        .from('asset-images')
+        .upload(filePath, file);
+
+      if (uploadError) {
+        throw uploadError;
+      }
+
+      // Get public URL
+      const { data } = supabase.storage
+        .from('asset-images')
+        .getPublicUrl(filePath);
+
+      const currentImages = formData.images || [];
+      setFormData({ ...formData, images: [...currentImages, data.publicUrl] });
+      
+    } catch (error: any) {
+      alert('Error uploading image: ' + error.message);
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  const handleRemoveImage = (index: number) => {
+    const currentImages = formData.images || [];
+    const newImages = currentImages.filter((_, i) => i !== index);
+    setFormData({ ...formData, images: newImages });
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -257,6 +309,50 @@ export default function AssetModal({ isOpen, onClose, onSave, initialData }: Ass
                             <Plus className="h-4 w-4 mr-1" />
                             添加网站
                           </button>
+                        </div>
+
+                        <div>
+                          <label className="block text-sm font-medium leading-6 text-gray-900">照片 (最多2张)</label>
+                          <div className="mt-2 flex items-center gap-4 flex-wrap">
+                            {formData.images?.map((img, index) => (
+                              <div key={index} className="relative group">
+                                <img
+                                  src={img}
+                                  alt={`Asset ${index + 1}`}
+                                  className="h-24 w-24 object-cover rounded-lg border border-gray-200"
+                                />
+                                <button
+                                  type="button"
+                                  onClick={() => handleRemoveImage(index)}
+                                  className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 shadow-md hover:bg-red-600 transition-colors"
+                                >
+                                  <X className="h-3 w-3" />
+                                </button>
+                              </div>
+                            ))}
+                            
+                            {(formData.images?.length || 0) < 2 && (
+                              <label className={`
+                                flex flex-col items-center justify-center h-24 w-24 rounded-lg border-2 border-dashed border-gray-300 
+                                cursor-pointer hover:border-indigo-500 hover:bg-gray-50 transition-all
+                                ${uploading ? 'opacity-50 cursor-not-allowed' : ''}
+                              `}>
+                                <div className="text-center">
+                                  <Camera className="mx-auto h-6 w-6 text-gray-400" />
+                                  <span className="mt-1 block text-xs text-gray-500">拍照/上传</span>
+                                </div>
+                                <input
+                                  type="file"
+                                  className="hidden"
+                                  accept="image/*"
+                                  onChange={handleImageUpload}
+                                  disabled={uploading}
+                                />
+                              </label>
+                            )}
+                          </div>
+                          {uploading && <p className="mt-1 text-xs text-indigo-500">正在上传...</p>}
+                          <p className="mt-1 text-xs text-gray-500">支持上传照片或直接拍照，方便记录设备外观或序列号。</p>
                         </div>
 
                         <div>
