@@ -409,5 +409,57 @@ export default function AssetModal({ isOpen, onClose, onSave, initialData }: Ass
         </div>
       </Dialog>
     </Transition.Root>
+
+    {/* Image Preview Modal */}
+    <Transition.Root show={!!previewImage} as={Fragment}>
+      <Dialog as="div" className="relative z-50" onClose={() => setPreviewImage(null)}>
+        <Transition.Child
+          as={Fragment}
+          enter="ease-out duration-300"
+          enterFrom="opacity-0"
+          enterTo="opacity-100"
+          leave="ease-in duration-200"
+          leaveFrom="opacity-100"
+          leaveTo="opacity-0"
+        >
+          <div className="fixed inset-0 bg-black bg-opacity-90 transition-opacity" />
+        </Transition.Child>
+
+        <div className="fixed inset-0 z-50 overflow-y-auto">
+          <div className="flex min-h-full items-center justify-center p-4 text-center">
+            <Transition.Child
+              as={Fragment}
+              enter="ease-out duration-300"
+              enterFrom="opacity-0 scale-95"
+              enterTo="opacity-100 scale-100"
+              leave="ease-in duration-200"
+              leaveFrom="opacity-100 scale-100"
+              leaveTo="opacity-0 scale-95"
+            >
+              <Dialog.Panel className="relative transform overflow-hidden rounded-lg bg-transparent text-left shadow-xl transition-all max-w-4xl w-full">
+                <div className="absolute right-0 top-0 pr-4 pt-4 z-10">
+                  <button
+                    type="button"
+                    className="rounded-full bg-black/50 p-2 text-white hover:bg-black/70 focus:outline-none"
+                    onClick={() => setPreviewImage(null)}
+                  >
+                    <span className="sr-only">Close</span>
+                    <X className="h-6 w-6" aria-hidden="true" />
+                  </button>
+                </div>
+                <div className="flex justify-center">
+                  <img
+                    src={previewImage || ''}
+                    alt="Preview"
+                    className="max-h-[85vh] w-auto object-contain rounded-md"
+                  />
+                </div>
+              </Dialog.Panel>
+            </Transition.Child>
+          </div>
+        </div>
+      </Dialog>
+    </Transition.Root>
+    </>
   );
 }
