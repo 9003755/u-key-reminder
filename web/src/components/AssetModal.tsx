@@ -166,6 +166,7 @@ export default function AssetModal({ isOpen, onClose, onSave, initialData }: Ass
   };
 
   return (
+    <>
     <Transition.Root show={isOpen} as={Fragment}>
       <Dialog as="div" className="relative z-10" onClose={onClose}>
         <Transition.Child
@@ -460,6 +461,5 @@ export default function AssetModal({ isOpen, onClose, onSave, initialData }: Ass
         </div>
       </Dialog>
     </Transition.Root>
-    </>
   );
 }
