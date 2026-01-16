@@ -1,0 +1,1 @@
+update profiles set is_admin = true;

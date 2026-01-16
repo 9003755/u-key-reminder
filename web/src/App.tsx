@@ -4,6 +4,8 @@ import { supabase } from './lib/supabase';
 import type { Session } from '@supabase/supabase-js';
 import Login from './pages/Login';
 import Dashboard from './pages/Dashboard';
+import AdminLogin from './pages/admin/AdminLogin';
+import AdminDashboard from './pages/admin/AdminDashboard';
 import Layout from './components/Layout';
 
 function App() {
@@ -46,6 +48,11 @@ function App() {
   return (
     <BrowserRouter>
       <Routes>
+        {/* Admin Routes - Completely Independent */}
+        <Route path="/admin/login" element={<AdminLogin />} />
+        <Route path="/admin/dashboard" element={<AdminDashboard />} />
+
+        {/* User Routes */}
         <Route path="/login" element={!session ? <Login /> : <Navigate to="/" />} />
         <Route path="/" element={session ? <Layout><Dashboard /></Layout> : <Navigate to="/login" />} />
       </Routes>
