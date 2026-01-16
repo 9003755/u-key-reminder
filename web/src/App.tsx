@@ -8,6 +8,17 @@ import AdminLogin from './pages/admin/AdminLogin';
 import AdminDashboard from './pages/admin/AdminDashboard';
 import Layout from './components/Layout';
 
+// Component to restrict access to local environment only
+const LocalOnlyRoute = ({ children }: { children: React.ReactNode }) => {
+  const isLocal = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+  
+  if (!isLocal) {
+    return <Navigate to="/" replace />;
+  }
+  
+  return <>{children}</>;
+};
+
 function App() {
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
@@ -48,9 +59,17 @@ function App() {
   return (
     <BrowserRouter>
       <Routes>
-        {/* Admin Routes - Completely Independent */}
-        <Route path="/admin/login" element={<AdminLogin />} />
-        <Route path="/admin/dashboard" element={<AdminDashboard />} />
+        {/* Admin Routes - Completely Independent & Local Only */}
+        <Route path="/admin/login" element={
+          <LocalOnlyRoute>
+            <AdminLogin />
+          </LocalOnlyRoute>
+        } />
+        <Route path="/admin/dashboard" element={
+          <LocalOnlyRoute>
+            <AdminDashboard />
+          </LocalOnlyRoute>
+        } />
 
         {/* User Routes */}
         <Route path="/login" element={!session ? <Login /> : <Navigate to="/" />} />
