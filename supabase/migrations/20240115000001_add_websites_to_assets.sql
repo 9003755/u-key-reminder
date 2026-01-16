@@ -1,1 +1,1 @@
-alter table assets add column websites text[] default array[]::text[];
+alter table assets add column if not exists websites text[] default array[]::text[];

@@ -8,6 +8,7 @@ on conflict (id) do nothing;
 
 -- 3. Set up RLS for storage.objects
 -- Allow users to upload files to their own folder (defined by user_id)
+drop policy if exists "Users can upload their own asset images" on storage.objects;
 create policy "Users can upload their own asset images"
 on storage.objects for insert
 with check (
@@ -15,6 +16,7 @@ with check (
   auth.uid() = owner
 );
 
+drop policy if exists "Users can update their own asset images" on storage.objects;
 create policy "Users can update their own asset images"
 on storage.objects for update
 with check (
@@ -22,6 +24,7 @@ with check (
   auth.uid() = owner
 );
 
+drop policy if exists "Users can delete their own asset images" on storage.objects;
 create policy "Users can delete their own asset images"
 on storage.objects for delete
 using (
@@ -29,6 +32,7 @@ using (
   auth.uid() = owner
 );
 
+drop policy if exists "Users can view their own asset images" on storage.objects;
 create policy "Users can view their own asset images"
 on storage.objects for select
 using (
