@@ -158,6 +158,10 @@ serve(async (req) => {
     if (RESEND_API_KEY && notifications.length > 0) {
       for (const notification of notifications) {
         log(`Sending email to ${notification.email} for ${notification.assetName}...`)
+        
+        // Add a 2-second delay to avoid rate limiting
+        await new Promise(resolve => setTimeout(resolve, 2000));
+
         const res = await fetch('https://api.resend.com/emails', {
           method: 'POST',
           headers: {
