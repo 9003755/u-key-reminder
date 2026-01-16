@@ -461,5 +461,6 @@ export default function AssetModal({ isOpen, onClose, onSave, initialData }: Ass
         </div>
       </Dialog>
     </Transition.Root>
+    </>
   );
 }
