@@ -3,7 +3,15 @@ import { supabase } from '../lib/supabase';
 
 export default function Layout({ children }: { children: React.ReactNode }) {
   const handleLogout = async () => {
-    await supabase.auth.signOut();
+    try {
+      await supabase.auth.signOut();
+    } catch (error) {
+      console.error('Error signing out:', error);
+    } finally {
+      // Force clear local storage and redirect to ensure logout
+      localStorage.clear();
+      window.location.href = '/login';
+    }
   };
 
   return (
