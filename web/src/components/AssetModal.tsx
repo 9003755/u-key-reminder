@@ -321,7 +321,8 @@ export default function AssetModal({ isOpen, onClose, onSave, initialData }: Ass
                                 <img
                                   src={img}
                                   alt={`Asset ${index + 1}`}
-                                  className="h-24 w-24 object-cover rounded-lg border border-gray-200"
+                                  className="h-24 w-24 object-cover rounded-lg border border-gray-200 cursor-pointer hover:opacity-90 transition-opacity"
+                                  onClick={() => setPreviewImage(img)}
                                 />
                                 <button
                                   type="button"
