@@ -37,6 +37,7 @@ export default function AssetModal({ isOpen, onClose, onSave, initialData }: Ass
   });
   const [loading, setLoading] = useState(false);
   const [uploading, setUploading] = useState(false);
+  const [previewImage, setPreviewImage] = useState<string | null>(null);
 
   useEffect(() => {
     if (initialData) {
