@@ -151,7 +151,7 @@ export default function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
 
                         <div>
                           <label htmlFor="notify_days" className="block text-sm font-medium leading-6 text-gray-900">
-                            提醒提前量 (天)
+                            默认提醒提前量 (天)
                           </label>
                           <div className="mt-1">
                             <input
@@ -165,9 +165,8 @@ export default function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
                             />
                           </div>
                           <p className="mt-1 text-xs text-gray-500">
-                            请输入您希望收到提醒的剩余天数，用逗号分隔。<br/>
-                            例如 "7, 3, 1" 表示在到期前第7天、第3天和第1天分别发送提醒。<br/>
-                            (注：已过期的资产默认会每天提醒，直至处理)
+                            这是全局默认设置。如果单个资产未单独设置提前量，将使用此配置。<br/>
+                            例如 "30, 7, 1" 表示在到期前第30天、第7天和第1天发送提醒。
                           </p>
                         </div>
 

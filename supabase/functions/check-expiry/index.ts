@@ -91,7 +91,13 @@ serve(async (req) => {
 
       const profile = profiles.find(p => p.id === asset.user_id)
       const wechatToken = profile?.wechat_webhook
-      const notifyDaysSetting = profile?.notify_days || [30, 7, 1] // Default
+      
+      // Determine notification schedule: Asset-specific > Profile-global > Default
+      const assetNotifyDays = asset.notify_advance_days
+      const profileNotifyDays = profile?.notify_days || [30, 7, 1]
+      const notifyDaysSetting = (assetNotifyDays && assetNotifyDays.length > 0) 
+        ? assetNotifyDays 
+        : profileNotifyDays
       
       const expiryDate = new Date(asset.expiry_date)
       expiryDate.setHours(0, 0, 0, 0)

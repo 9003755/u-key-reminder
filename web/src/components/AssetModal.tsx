@@ -22,7 +22,7 @@ interface AssetModalProps {
   initialData?: Asset | null;
 }
 
-const ASSET_TYPES = ['U-Key', 'CA', 'Domain', 'Server', 'Insurance', 'Other'];
+const ASSET_TYPES = ['U-Key', 'CA', 'Domain', 'Server', 'Insurance', '交付/投标/付款截止日', 'Other'];
 
 export default function AssetModal({ isOpen, onClose, onSave, initialData }: AssetModalProps) {
   const [formData, setFormData] = useState<Asset>({
@@ -38,6 +38,7 @@ export default function AssetModal({ isOpen, onClose, onSave, initialData }: Ass
   const [loading, setLoading] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [previewImage, setPreviewImage] = useState<string | null>(null);
+  const [notifyDaysString, setNotifyDaysString] = useState('');
 
   useEffect(() => {
     if (initialData) {
@@ -47,6 +48,12 @@ export default function AssetModal({ isOpen, onClose, onSave, initialData }: Ass
         notification_enabled: initialData.notification_enabled ?? true,
         images: initialData.images || []
       });
+      // Handle notify days
+      if (initialData.notify_advance_days && initialData.notify_advance_days.length > 0) {
+        setNotifyDaysString(initialData.notify_advance_days.join(', '));
+      } else {
+        setNotifyDaysString('');
+      }
     } else {
       setFormData({
         name: '',
@@ -58,6 +65,7 @@ export default function AssetModal({ isOpen, onClose, onSave, initialData }: Ass
         notification_enabled: true,
         images: []
       });
+      setNotifyDaysString('');
     }
   }, [initialData, isOpen]);
 
@@ -129,7 +137,14 @@ export default function AssetModal({ isOpen, onClose, onSave, initialData }: Ass
 
     // Filter out empty websites
     const cleanWebsites = formData.websites.filter(w => w.trim() !== '');
-    const dataToSave = { ...formData, websites: cleanWebsites };
+    
+    // Parse notify days
+    const notifyDaysArray = notifyDaysString.split(/[,，]/) // Support both English and Chinese commas
+      .map(d => parseInt(d.trim()))
+      .filter(d => !isNaN(d) && d >= 0)
+      .sort((a, b) => b - a);
+
+    const dataToSave = { ...formData, websites: cleanWebsites, notify_advance_days: notifyDaysArray };
 
     try {
       // Demo Mode Handling
@@ -256,6 +271,27 @@ export default function AssetModal({ isOpen, onClose, onSave, initialData }: Ass
                               onChange={(e) => setFormData({ ...formData, expiry_date: e.target.value })}
                             />
                           </div>
+
+                          <div className="mt-4">
+                            <label htmlFor="notify_days" className="block text-sm font-medium leading-6 text-gray-900">
+                              设置提醒提前量 (天)
+                            </label>
+                            <div className="mt-1">
+                              <input
+                                type="text"
+                                name="notify_days"
+                                id="notify_days"
+                                className="block w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6 px-3"
+                                placeholder="例如: 30, 7, 1"
+                                value={notifyDaysString}
+                                onChange={(e) => setNotifyDaysString(e.target.value)}
+                              />
+                            </div>
+                            <p className="mt-1 text-xs text-gray-500">
+                              请用逗号分隔天数。例如 "30, 7, 1" 表示在到期前30天、7天和1天发送提醒。
+                            </p>
+                          </div>
+
                           <div className="mt-2 flex items-center">
                             <input
                               id="notification_enabled"

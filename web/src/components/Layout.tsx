@@ -21,7 +21,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
           <div className="flex h-16 justify-between items-center">
             <div className="flex items-center">
               <ShieldCheck className="h-8 w-8 text-indigo-600" />
-              <span className="ml-2 text-xl font-bold text-gray-900">U盾/CA 提醒助手</span>
+              <span className="ml-2 text-xl font-bold text-gray-900">重要事件提醒助手</span>
             </div>
             <button
               onClick={handleLogout}

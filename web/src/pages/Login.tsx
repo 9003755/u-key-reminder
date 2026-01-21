@@ -49,7 +49,7 @@ export default function Login() {
           </h2>
           {/* 系统简介 */}
           <p className="mt-4 text-center text-sm text-gray-600 leading-relaxed">
-            专业的 U盾/CA 证书及重要资产到期提醒助手。
+            专业的 U盾/CA 、保险以及重要事项到期提醒助手
             <br />
             支持邮件、微信多渠道通知，确保您的关键业务永不掉线。
           </p>
