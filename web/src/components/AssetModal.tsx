@@ -13,6 +13,7 @@ interface Asset {
   notes: string;
   notification_enabled?: boolean;
   images?: string[];
+  notify_advance_days?: number[];
 }
 
 interface AssetModalProps {
