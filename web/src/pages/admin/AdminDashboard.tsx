@@ -20,13 +20,6 @@ interface LoginLog {
   login_at: string;
 }
 
-interface UserProfile {
-  id: string;
-  email_notify: boolean;
-  is_admin: boolean;
-  notify_days: number[];
-}
-
 interface User {
   id: string;
   email: string;
